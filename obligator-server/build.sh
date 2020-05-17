@@ -1,0 +1,1 @@
+crystal build ./src/obligator_server.cr -o ./bin/obligator_server
