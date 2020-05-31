@@ -1,0 +1,1 @@
+crystal build ./src/obligator_console.cr -o ./bin/obligator_console

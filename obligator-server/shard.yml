@@ -8,11 +8,17 @@ description: |
   Сервис для работы с облигациями в привязке к брокеру Тинькофф инвестиции
 
 dependencies:
+  invest_api:
+    path: ../../InvestApi
+
   crest:
     github: mamantoha/crest
   
   kemal:
     github: kemalcr/kemal
+
+  crinja:
+    github: straight-shoota/crinja
 
 # development_dependencies:
 #   webmock:
