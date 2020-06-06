@@ -12,7 +12,7 @@ class BondStore
     end
 
     def initialize        
-    end
+    end    
 
     # Возвращает все имеющиеся облигации
     def getBonds() : Array(StoreBondInfo)        
@@ -49,5 +49,5 @@ class BondStore
         @allBonds = mergedBonds
 
         return mergedBonds
-    end
+    end    
 end

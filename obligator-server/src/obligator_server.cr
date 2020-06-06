@@ -8,13 +8,7 @@ require "./store/bond_store"
 
 # https://tinkoffcreditsystems.github.io/invest-openapi/swagger-ui/#/market/get_market_bonds
 
-DEFAULT_FIELDS = "name,isin,price"
-
-# Возможные значения полей облигации
-alias BondValue = Int32 | Int64 | Float64 | String | Time | Nil
-
-alias BondHash = Hash(String, BondValue)
-
+DEFAULT_FIELDS = "fullname,isin,price"
 
 # Группа облигаций 
 class BondGroup
@@ -27,17 +21,6 @@ class BondGroup
     # Конструктор
     def initialize(@key, @bonds)    
     end
-end
-
-# Возвращает облигацию в виде словаря
-def getBondAsHash(bond : StoreBondInfo, fields : Array(String)) : BondHash
-    res = BondHash.new
-
-    fields.each do |x|
-        res[x] = getBondValueByName(bond, x)
-    end
-
-    return res
 end
 
 # Сортирует массив с группами облигаций по ключу
@@ -61,7 +44,7 @@ end
 # Сортирует облигации
 def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Array(StoreBondInfo)      
     order = orders.shift
-    groups = bonds.group_by { |x| getBondValueByName(x, order) }
+    groups = bonds.group_by { |x| x.getValueByName(order) }
        
     bondGroups = Array(BondGroup).new
     groups.each do |k, v| 
@@ -83,46 +66,20 @@ def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Ar
     end
   
     return res
-  end
-
-# Возвращает значение облигации по имени
-def getBondValueByName(bond : StoreBondInfo, name : String) : BondValue
-    case name    
-    when "name"
-        return bond.fullname
-    when "isin"
-        return bond.isin
-    when "price"
-        return bond.price
-    when "face"
-        return bond.faceValue        
-    when "initFace"
-        return bond.initialFaceValue
-    when "currency"
-        return bond.currency
-    when "level"
-        return bond.listLevel
-    when "size"
-        return bond.issueSize
-    when "issueDate"
-        return bond.issueDate
-    when "endDate"
-        return bond.endDate
-    when "frequency"
-        return bond.couponFrequency
-    when "couponDate"
-        return bond.couponDate
-    when "couponPercent"
-        return bond.couponPercent
-    when "offerDate"
-        return bond.offerDate
-    else
-    end
 end
 
+# Возвращает список полей которые можно получить по облигации
+get "/bonds/fields" do |env|
+    env.response.content_type = "application/json"
+    fields = StoreBondInfo.getFieldNames()
+
+    next {
+        fields: fields.map { |x| { "name" => x.name, "description" => x.description } }
+    }.to_json
+end
 
 # Возвращает список облигаций
-get "/bonds" do |env|
+get "/bonds/fetch" do |env|
     env.response.content_type = "application/json"
     # Возвращаемые поля
     fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
@@ -138,7 +95,7 @@ get "/bonds" do |env|
 
     res = Array(BondHash).new
     allBonds.each do |bond|
-        bondData = getBondAsHash(bond, fields)
+        bondData = bond.getBondAsHash(fields)
 
         if fields.any?("realPrice")
             # Брать ставку из интернета
