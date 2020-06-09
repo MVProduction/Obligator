@@ -68,6 +68,73 @@ def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Ar
     return res
 end
 
+# Применяет оператор фильтра для значений
+def applyFilterOperator(operator : String, primeValue, filterValue) : Bool
+    case operator
+    when "="
+        if primeValue.is_a?(Int32)
+            return primeValue == filterValue.as(Int32|Int64|Float64|String).to_i
+        elsif primeValue.is_a?(Int64)
+            return primeValue == filterValue.as(Int32|Int64|Float64|String).to_i64
+        elsif primeValue.is_a?(Float64)
+            return primeValue == filterValue.as(Int32|Int64|Float64|String).to_f64
+        end
+    else
+        return false
+    end
+
+    return false
+end
+
+# Фильтрует облигации
+# Пример фильтра: price<100;listLevel=1
+def filterBonds(bonds : Array(StoreBondInfo), filterStr : String) : Array(StoreBondInfo)
+    filterItems = filterStr.split(";")
+    filterItems.each do |item|
+        matches = item.match(/([\w]+)([>,<,<=,>=,=])([\w]+)/).not_nil!
+        fieldName = matches[1]
+        operator = matches[2]
+        v1 = matches[3]
+
+        bonds = bonds.select { |x| 
+            v2 = x.getValueByName(fieldName)
+            next applyFilterOperator(operator, v2, v1)
+        }
+    end
+    return bonds.select { |x| x != nil }
+end
+
+# Сортирует облигации
+def orderBonds(bonds : Array(StoreBondInfo), orderStr : String) : Array(StoreBondInfo)
+    if orderStr
+        orderFields = orderStr.split(",")
+        bonds = sortBondsByOrders(bonds, orderFields)
+    end
+    return bonds
+end
+
+# Возвращает ответ на запрос облигаций
+def getBondFetchResponse(bonds : Array(StoreBondInfo), fieldStr : String) : String
+    fields = fieldStr.split(",")
+
+    res = Array(BondHash).new
+    bonds.each do |bond|
+        bondData = bond.getBondAsHash(fields)
+
+        if fields.any?("realPrice")
+            # Брать ставку из интернета
+            realPrice = bond.calcRealPrice(5.5).round(2)
+            bondData["realPrice"] = realPrice
+        end
+
+        res << bondData
+    end
+
+    return {
+        bonds: res
+    }.to_json
+end
+
 # Возвращает список полей которые можно получить по облигации
 get "/bonds/fields" do |env|
     env.response.content_type = "application/json"
@@ -81,34 +148,22 @@ end
 # Возвращает список облигаций
 get "/bonds/fetch" do |env|
     env.response.content_type = "application/json"
-    # Возвращаемые поля
-    fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
-    orderStr = env.params.query["orders"]?
-    fields = fieldStr.split(",")
-
+    
+    # Получает все облигации
     allBonds = BondStore.instance.getBonds()
+    
+    # Применяет фильтр
+    filterStr = env.params.query["filter"]?    
+    allBonds = filterBonds(allBonds, filterStr) if filterStr
 
-    if orderStr
-        orderFields = orderStr.split(",")
-        allBonds = sortBondsByOrders(allBonds, orderFields)
-    end
+    # Применяет сортировку
+    orderStr = env.params.query["orders"]?    
+    allBonds = orderBonds(allBonds, orderStr) if orderStr
 
-    res = Array(BondHash).new
-    allBonds.each do |bond|
-        bondData = bond.getBondAsHash(fields)
-
-        if fields.any?("realPrice")
-            # Брать ставку из интернета
-            realPrice = bond.calcRealPrice(5.5).round(2)
-            bondData["realPrice"] = realPrice
-        end
-
-        res << bondData
-    end
-
-    next {
-        bonds: res
-    }.to_json
+    # Формирует ответ    
+    fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
+    
+    next getBondFetchResponse(allBonds, fieldStr)    
 end
   
 Kemal.run 8090

@@ -1,0 +1,9 @@
+---
+version: 1.0
+shards:
+  http-client-digest_auth:
+    git: https://github.com/mamantoha/http-client-digest_auth.git
+    version: 0.4.0
+  crest:
+    git: https://github.com/mamantoha/crest.git
+    version: 0.25.1

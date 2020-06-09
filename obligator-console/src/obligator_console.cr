@@ -3,6 +3,13 @@ require "crest"
 require "json"
 require "option_parser"
 
+enum OptionState 
+    # Перечисление полей облигации
+    FieldList
+    # Запрашивает облигации
+    Fetch
+end
+
 # Возвращает поля облигации в виде словаря
 def getBondFields() : Hash(String, String)
     res = Crest.get(
@@ -31,24 +38,29 @@ def execBondFields()
 end
 
 # Запрашивает список облигаций
-def execBondFetch(fields : Array(String), orders : Array(String))
-    fstr = fields.join(",")
-    ostr = orders.join(",")
+def execBondFetch(fieldStr : String, filterStr : String, orderStr : String)  
     params = HTTP::Params.build do |query|
-        if !fstr.empty?
-            query.add "fields", fstr
+        if !fieldStr.empty?
+            query.add "fields", fieldStr
         end
 
-        if !ostr.empty?        
-            query.add "orders", ostr
+        if !filterStr.empty?
+            query.add "filter", filterStr
+        end
+
+        if !orderStr.empty?        
+            query.add "orders", orderStr
         end
     end
+    p params
 
     res = Crest.get(
         "http://localhost:8090/bonds/fetch?#{params}"
-    )
+    )    
 
     fieldDescr = getBondFields()
+
+    fields = fieldStr.split(",")
 
     response = JSON.parse(res.body)
     bondArr = response["bonds"].as_a
@@ -64,25 +76,28 @@ def execBondFetch(fields : Array(String), orders : Array(String))
     end
 end
 
-isFieldList = false
+state = OptionState::Fetch
 fieldStr = "name,isin,price"
+filterStr = ""
 orderStr = ""
 
 begin
     OptionParser.parse do |parser|
         parser.banner = "Использование: obligator_console [аргументы]"
-        parser.on("-lf", "--field", "Возвращает список доступных полей") { |x| isFieldList = true }
-        parser.on("-f name,isin,price", "--field=name,isin,price", "Указывает по каким полям нужно вернуть информацию") { |x| fieldStr = x }
+        parser.on("-l", "--list", "Возвращает список доступных полей") { |x| state = OptionState::FieldList }
+        parser.on("-b name,isin,price", "--bond=name,isin,price", "Указывает по каким полям нужно вернуть информацию") { |x| fieldStr = x }
+        parser.on("-f listingLevel=1;price<100", "--filter=listingLevel=1;price<100", "Фильтрует по полям облигации") { |x| filterStr = x }
         parser.on("-o level,price", "--order=level,price", "") { |x| orderStr = x }
         parser.on("-h", "--help", "Отображает это сообщение") { puts parser }
     end
 rescue        
 end
 
-if isFieldList
+case state
+when OptionState::FieldList
     execBondFields()
+when OptionState::Fetch
+    execBondFetch(fieldStr, filterStr, orderStr)
 else
-    fields = fieldStr.split(",")
-    orders = orderStr.split(",")
-    execBondFetch(fields, orders)
+
 end

@@ -1,5 +1,5 @@
 name: crest
-version: 0.25.0
+version: 0.25.1
 
 authors:
   - Anton Maminov <anton.maminov@gmail.com>
@@ -12,6 +12,7 @@ crystal: 0.34.0
 dependencies:
   http-client-digest_auth:
     github: mamantoha/http-client-digest_auth
+    version: ~> 0.4.0
 
 development_dependencies:
   kemal:

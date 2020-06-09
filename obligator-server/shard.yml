@@ -15,7 +15,7 @@ dependencies:
     github: mamantoha/crest
   
   kemal:
-    github: kemalcr/kemal
+    github: kemalcr/kemal    
 
   crinja:
     github: straight-shoota/crinja

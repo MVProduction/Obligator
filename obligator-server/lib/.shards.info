@@ -1,0 +1,24 @@
+---
+version: 1.0
+shards:
+  http-client-digest_auth:
+    git: https://github.com/mamantoha/http-client-digest_auth.git
+    version: 0.4.0
+  crest:
+    git: https://github.com/mamantoha/crest.git
+    version: 0.25.1
+  radix:
+    git: https://github.com/luislavena/radix.git
+    version: 0.3.9
+  kilt:
+    git: https://github.com/jeromegn/kilt.git
+    version: 0.4.0
+  exception_page:
+    git: https://github.com/crystal-loot/exception_page.git
+    version: 0.1.4
+  kemal:
+    path: /home/grabli66/WorkspaceTest/kemal
+    version: 0.26.1
+  crinja:
+    git: https://github.com/straight-shoota/crinja.git
+    version: 0.6.0
