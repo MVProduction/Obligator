@@ -8,6 +8,8 @@ enum OptionState
     FieldList
     # Запрашивает облигации
     Fetch
+    # Отображает помощь
+    Help
 end
 
 # Возвращает поля облигации в виде словаря
@@ -76,7 +78,7 @@ def execBondFetch(fieldStr : String, filterStr : String, orderStr : String)
     end
 end
 
-state = OptionState::Fetch
+state = OptionState::Help
 fieldStr = "name,isin,price"
 filterStr = ""
 orderStr = ""
@@ -84,13 +86,23 @@ orderStr = ""
 begin
     OptionParser.parse do |parser|
         parser.banner = "Использование: obligator_console [аргументы]"
-        parser.on("-l", "--list", "Возвращает список доступных полей") { |x| state = OptionState::FieldList }
-        parser.on("-b name,isin,price", "--bond=name,isin,price", "Указывает по каким полям нужно вернуть информацию") { |x| fieldStr = x }
-        parser.on("-f listingLevel=1,price<100", "--filter=listLevel=1,price<100", "Фильтрует по полям облигации") { |x| filterStr = x }
-        parser.on("-o level,price", "--order=level,price", "") { |x| orderStr = x }
-        parser.on("-h", "--help", "Отображает это сообщение") { puts parser }
+        parser.on("-l", "--list", "Возвращает список доступных полей") { |x| 
+            state = OptionState::FieldList
+        }
+        parser.on("-b name,isin,price", "--bond=name,isin,price", "Указывает по каким полям нужно вернуть информацию") { |x| 
+            fieldStr = x
+        }
+        parser.on("-f listingLevel[=]1,price[<=]100", "--filter=listLevel[=]1,price[<=]100", "Фильтрует по полям облигации") { |x| 
+            filterStr = x
+        }
+        parser.on("-o level|d,price", "--order=level|d,price", "Сортирует по полям облигации. a - по возрастанию, d - по убыванию. Если не указан тип сортировки то применяется по возрастанию") { |x| 
+            orderStr = x
+        }
+        parser.on("-h", "--help", "Отображает это сообщение") {}
+
+        puts parser if state == OptionState::Help
     end
-rescue        
+rescue
 end
 
 case state
@@ -99,5 +111,4 @@ when OptionState::FieldList
 when OptionState::Fetch
     execBondFetch(fieldStr, filterStr, orderStr)
 else
-
 end
