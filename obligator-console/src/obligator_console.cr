@@ -56,7 +56,7 @@ def execBondFetch(fieldStr : String, filterStr : String, orderStr : String)
 
     res = Crest.get(
         "http://localhost:8090/bonds/fetch?#{params}"
-    )    
+    )
 
     fieldDescr = getBondFields()
 
@@ -86,7 +86,7 @@ begin
         parser.banner = "Использование: obligator_console [аргументы]"
         parser.on("-l", "--list", "Возвращает список доступных полей") { |x| state = OptionState::FieldList }
         parser.on("-b name,isin,price", "--bond=name,isin,price", "Указывает по каким полям нужно вернуть информацию") { |x| fieldStr = x }
-        parser.on("-f listingLevel=1;price<100", "--filter=listingLevel=1;price<100", "Фильтрует по полям облигации") { |x| filterStr = x }
+        parser.on("-f listingLevel=1,price<100", "--filter=listLevel=1,price<100", "Фильтрует по полям облигации") { |x| filterStr = x }
         parser.on("-o level,price", "--order=level,price", "") { |x| orderStr = x }
         parser.on("-h", "--help", "Отображает это сообщение") { puts parser }
     end

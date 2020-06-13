@@ -1,19 +1,15 @@
-version: 2.0
+version: 1.0
 shards:
   crest:
-    git: https://github.com/mamantoha/crest.git
+    github: mamantoha/crest
     version: 0.25.1
 
-  crinja:
-    git: https://github.com/straight-shoota/crinja.git
-    version: 0.6.0
-
   exception_page:
-    git: https://github.com/crystal-loot/exception_page.git
+    github: crystal-loot/exception_page
     version: 0.1.4
 
   http-client-digest_auth:
-    git: https://github.com/mamantoha/http-client-digest_auth.git
+    github: mamantoha/http-client-digest_auth
     version: 0.4.0
 
   invest_api:
@@ -21,14 +17,14 @@ shards:
     version: 0.1.0
 
   kemal:
-    git: https://github.com/kemalcr/kemal.git
+    github: kemalcr/kemal
     version: 0.26.1
 
   kilt:
-    git: https://github.com/jeromegn/kilt.git
+    github: jeromegn/kilt
     version: 0.4.0
 
   radix:
-    git: https://github.com/luislavena/radix.git
+    github: luislavena/radix
     version: 0.3.9
 

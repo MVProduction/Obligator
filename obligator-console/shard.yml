@@ -10,6 +10,7 @@ version: 0.1.0
 dependencies:
   crest:
     github: mamantoha/crest
+    branch: master
 
 #   pg:
 #     github: will/crystal-pg

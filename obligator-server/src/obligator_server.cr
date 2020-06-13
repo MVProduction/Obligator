@@ -24,27 +24,44 @@ class BondGroup
 end
 
 # Сортирует массив с группами облигаций по ключу
-def sortBondGroupByKey(bonds : Array(BondGroup)) : Array(BondGroup)    
-    sbonds = bonds.sort! { |a,b|     
-      if a.key.is_a?(String) && b.key.is_a?(String)      
-        next a.key.to_s <=> b.key.to_s
-      elsif a.key.is_a?(Int32) && b.key.is_a?(Int32)      
-        next a.key.as(Int32) <=> b.key.as(Int32)
-      elsif a.key.is_a?(Int64) && b.key.is_a?(Int64)      
-        next a.key.as(Int64) <=> b.key.as(Int64)  
-      elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)      
-        next a.key.as(Float64) <=> b.key.as(Float64)
-      end
-      next 0
-    }
-    
-    return sbonds
+def sortBondGroupByKey(bonds : Array(BondGroup), orderType : String?) : Array(BondGroup)
+    case orderType
+    when "d" # Сортировка по убыванию
+        return bonds.sort! { |b, a|
+            if a.key.is_a?(String) && b.key.is_a?(String)      
+                next a.key.to_s <=> b.key.to_s
+            elsif a.key.is_a?(Int32) && b.key.is_a?(Int32)      
+                next a.key.as(Int32) <=> b.key.as(Int32)
+            elsif a.key.is_a?(Int64) && b.key.is_a?(Int64)      
+                next a.key.as(Int64) <=> b.key.as(Int64)  
+            elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)      
+                next a.key.as(Float64) <=> b.key.as(Float64)
+            end
+            next 0
+        }
+    else # Сортировка по возрастанию
+        return bonds.sort! { |a,b|     
+            if a.key.is_a?(String) && b.key.is_a?(String)      
+                next a.key.to_s <=> b.key.to_s
+            elsif a.key.is_a?(Int32) && b.key.is_a?(Int32)      
+                next a.key.as(Int32) <=> b.key.as(Int32)
+            elsif a.key.is_a?(Int64) && b.key.is_a?(Int64)      
+                next a.key.as(Int64) <=> b.key.as(Int64)  
+            elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)      
+                next a.key.as(Float64) <=> b.key.as(Float64)
+            end
+            next 0
+        }
+    end        
 end
 
 # Сортирует облигации
 def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Array(StoreBondInfo)      
-    order = orders.shift
-    groups = bonds.group_by { |x| x.getValueByName(order) }
+    orderData = orders.shift.split("|")
+    fieldName = orderData[0]
+    orderType = orderData[1]?
+
+    groups = bonds.group_by { |x| x.getValueByName(fieldName) }
        
     bondGroups = Array(BondGroup).new
     groups.each do |k, v| 
@@ -58,7 +75,7 @@ def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Ar
       bondGroups << bg
     end
   
-    bondGroups = sortBondGroupByKey(bondGroups)  
+    bondGroups = sortBondGroupByKey(bondGroups, orderType)  
   
     res = Array(StoreBondInfo).new
     bondGroups.each do |x|    
@@ -78,6 +95,42 @@ def applyFilterOperator(operator : String, primeValue, filterValue) : Bool
             return primeValue == filterValue.as(Int32|Int64|Float64|String).to_i64
         elsif primeValue.is_a?(Float64)
             return primeValue == filterValue.as(Int32|Int64|Float64|String).to_f64
+        elsif primeValue.is_a?(String)
+            return primeValue == filterValue.to_s
+        else
+            return primeValue == filterValue
+        end
+    when ">"
+        if primeValue.is_a?(Int32)
+            return primeValue > filterValue.as(Int32|Int64|Float64|String).to_i
+        elsif primeValue.is_a?(Int64)
+            return primeValue > filterValue.as(Int32|Int64|Float64|String).to_i64
+        elsif primeValue.is_a?(Float64)
+            return primeValue > filterValue.as(Int32|Int64|Float64|String).to_f64        
+        end
+    when ">="
+        if primeValue.is_a?(Int32)
+            return primeValue >= filterValue.as(Int32|Int64|Float64|String).to_i
+        elsif primeValue.is_a?(Int64)
+            return primeValue >= filterValue.as(Int32|Int64|Float64|String).to_i64
+        elsif primeValue.is_a?(Float64)
+            return primeValue >= filterValue.as(Int32|Int64|Float64|String).to_f64        
+        end
+    when "<"
+        if primeValue.is_a?(Int32)
+            return primeValue < filterValue.as(Int32|Int64|Float64|String).to_i
+        elsif primeValue.is_a?(Int64)
+            return primeValue < filterValue.as(Int32|Int64|Float64|String).to_i64
+        elsif primeValue.is_a?(Float64)
+            return primeValue < filterValue.as(Int32|Int64|Float64|String).to_f64        
+        end
+    when "<="
+        if primeValue.is_a?(Int32)
+            return primeValue <= filterValue.as(Int32|Int64|Float64|String).to_i
+        elsif primeValue.is_a?(Int64)
+            return primeValue <= filterValue.as(Int32|Int64|Float64|String).to_i64
+        elsif primeValue.is_a?(Float64)
+            return primeValue <= filterValue.as(Int32|Int64|Float64|String).to_f64        
         end
     else
         return false
@@ -89,9 +142,9 @@ end
 # Фильтрует облигации
 # Пример фильтра: price<100;listLevel=1
 def filterBonds(bonds : Array(StoreBondInfo), filterStr : String) : Array(StoreBondInfo)
-    filterItems = filterStr.split(";")
+    filterItems = filterStr.split(",")
     filterItems.each do |item|
-        matches = item.match(/([\w]+)([>,<,<=,>=,=])([\w]+)/).not_nil!
+        matches = item.match(/([\w]+)\[(.+)\]([\w]+)/).not_nil!
         fieldName = matches[1]
         operator = matches[2]
         v1 = matches[3]
@@ -153,7 +206,7 @@ get "/bonds/fetch" do |env|
     allBonds = BondStore.instance.getBonds()
     
     # Применяет фильтр
-    filterStr = env.params.query["filter"]?    
+    filterStr = env.params.query["filter"]?
     allBonds = filterBonds(allBonds, filterStr) if filterStr
 
     # Применяет сортировку
@@ -163,7 +216,7 @@ get "/bonds/fetch" do |env|
     # Формирует ответ    
     fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
     
-    next getBondFetchResponse(allBonds, fieldStr)    
+    next getBondFetchResponse(allBonds, fieldStr)
 end
   
 Kemal.run 8090

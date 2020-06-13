@@ -7,6 +7,9 @@ shards:
   crest:
     git: https://github.com/mamantoha/crest.git
     version: 0.25.1
+  invest_api:
+    path: ../../InvestApi
+    version: 0.1.0
   radix:
     git: https://github.com/luislavena/radix.git
     version: 0.3.9
@@ -17,8 +20,5 @@ shards:
     git: https://github.com/crystal-loot/exception_page.git
     version: 0.1.4
   kemal:
-    path: /home/grabli66/WorkspaceTest/kemal
+    path: /home/grabli66/WorkspaceTest/kemal/
     version: 0.26.1
-  crinja:
-    git: https://github.com/straight-shoota/crinja.git
-    version: 0.6.0

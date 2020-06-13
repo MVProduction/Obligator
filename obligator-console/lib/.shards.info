@@ -6,4 +6,4 @@ shards:
     version: 0.4.0
   crest:
     git: https://github.com/mamantoha/crest.git
-    version: 0.25.1
+    version: 0.25.1+git.commit.bac2c2404e7542e727fcea872c3b3fcc7d6bb94f

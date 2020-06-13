@@ -1,10 +1,10 @@
-version: 2.0
+version: 1.0
 shards:
   crest:
-    git: https://github.com/mamantoha/crest.git
-    version: 0.25.1
+    github: mamantoha/crest
+    commit: bac2c2404e7542e727fcea872c3b3fcc7d6bb94f
 
   http-client-digest_auth:
-    git: https://github.com/mamantoha/http-client-digest_auth.git
+    github: mamantoha/http-client-digest_auth
     version: 0.4.0
 
