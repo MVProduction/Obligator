@@ -188,6 +188,19 @@ def getBondFetchResponse(bonds : Array(StoreBondInfo), fieldStr : String) : Stri
     }.to_json
 end
 
+before_all do |env|
+    env.response.headers["Access-Control-Allow-Origin"] = "*"
+    env.response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, POST, PUT"
+    env.response.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, Origin, Authorization"
+    env.response.headers["Access-Control-Max-Age"] = "86400"
+end
+
+options "/bonds/fields" do |env|
+end
+
+options "/bonds/fetch" do |env|
+end
+
 # Возвращает список полей которые можно получить по облигации
 get "/bonds/fields" do |env|
     env.response.content_type = "application/json"
