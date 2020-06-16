@@ -1,16 +1,26 @@
 import 'dart:html';
 
+/// Функция которая вызывается при нажатии на колонку
+typedef OnColumnClickFunc = void Function();
+
 /// Таблица отображающая данные
 class DataTable {
   /// Коренной элемент
-  Element _root;
+  TableElement _root;
+
+  TableSectionElement _tbody;
+
+  TableSectionElement _thead;
 
   /// Добавляет колонку
-  void addColumn(String name) {
+  void addColumn(String name, OnColumnClickFunc onClick) {
     final column = Element.th();
-    column.text = name;        
+    column.text = name;
     column.style.borderBottom = '1px solid #111';
-    _root.append(column);
+    column.onClick.listen((event) {
+      onClick();
+    });
+    _thead.append(column);
   }
 
   /// Добавляет значения по колонкам
@@ -22,12 +32,19 @@ class DataTable {
       row.append(colValue);
     }
 
-    _root.append(row);
+    _tbody.append(row);
+  }
+
+  /// Очищает все строки таблицы
+  void clear() {
+    _tbody.children.clear();
   }
 
   /// Присоединяет к DOM компоненту
   void mount(Element element) {
-    _root = Element.table();    
+    _root = TableElement();
+    _thead = _root.createTHead();
+    _tbody = _root.createTBody();    
     element.append(_root);
   }
 }

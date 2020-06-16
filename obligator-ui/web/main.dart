@@ -1,27 +1,26 @@
+import 'dart:collection';
 import 'dart:html';
 
 import 'package:dio/dio.dart';
 
-import 'src/data_table.dart';
+import 'widgets/data_table/data_table.dart';
 
-void main() {
-  final table = DataTable();
+final table = DataTable();
+final orders = HashSet<String>();
 
+/// Наполняет таблицу
+void populateTable() {
   final dio = Dio();
-  dio
-      .get(
-          'http://localhost:8090/bonds/fetch?fields=fullname,isin,listLevel,price,couponPercent,couponFrequency,offerDate,endDate&orders=listLevel,couponPercent|d,price')
-      .then((response) {
-    table.mount(querySelector('#output'));
-    table.addColumn('Название');
-    table.addColumn('Isin');
-    table.addColumn('Листинг');
-    table.addColumn('Купон %');
-    table.addColumn('Периодичность выплаты');
-    table.addColumn('Цена %');
-    table.addColumn('Дата оферты');
-    table.addColumn('Дата погашения');
 
+  var url =
+      'http://localhost:8090/bonds/fetch?fields=fullname,isin,listLevel,price,couponPercent,couponFrequency,offerDate,endDate';
+  if (orders.isNotEmpty) {
+    final ordStr = orders.join(',');
+    url += '&orders=$ordStr';
+  }
+
+  dio.get(url).then((response) {
+    table.clear();
     final bodnArray = response.data['bonds'];
     for (var bondItem in bodnArray) {
       final name = bondItem['fullname'].toString();
@@ -45,4 +44,53 @@ void main() {
       ]);
     }
   });
+}
+
+void switchOrder(String order) {
+  if (orders.contains('$order|a')) {
+    orders.remove('$order|a');
+    orders.add('$order|d');
+  } else if (orders.contains('$order|d')) {
+    orders.remove('$order|d');
+  } else {
+    orders.add('$order|a');
+  }
+}
+
+void main() {
+  table.mount(querySelector('#output'));
+  table.addColumn('Название', () {
+    switchOrder('fullname');
+    populateTable();
+  });
+  table.addColumn('Isin', () {
+    switchOrder('isin');
+    populateTable();
+  });
+  table.addColumn('Листинг', () {
+    switchOrder('listLevel');
+    populateTable();
+  });
+  table.addColumn('Купон %', () {
+    switchOrder('couponPercent');
+    populateTable();
+  });
+  table.addColumn('Периодичность выплаты', () {
+    switchOrder('couponFrequency');
+    populateTable();
+  });
+  table.addColumn('Цена %', () {
+    switchOrder('price');
+    populateTable();
+  });
+  table.addColumn('Дата оферты', () {
+    switchOrder('offerDate');
+    populateTable();
+  });
+  table.addColumn('Дата погашения', () {
+    switchOrder('endDate');
+    populateTable();
+  });
+
+  populateTable();
 }
