@@ -8,18 +8,38 @@ class DataTable {
   /// Коренной элемент
   TableElement _root;
 
-  TableSectionElement _tbody;
-
+  /// Элемент с заголовками
   TableSectionElement _thead;
+
+  /// Элемент со строками
+  TableSectionElement _tbody;
 
   /// Добавляет колонку
   void addColumn(String name, OnColumnClickFunc onClick) {
     final column = Element.th();
-    column.text = name;
-    column.style.borderBottom = '1px solid #111';
+    final inner = Element.div();
+    inner.className = 'inner';
+
+    final title = Element.div();
+    title.className = 'title';
+    title.text = name;
+    final sort = Element.div();
+    sort.className = 'sort';
+    sort.text = '';
+    inner.append(title);
+    inner.append(sort);
     column.onClick.listen((event) {
+      if (sort.text == '') {
+        sort.text = 'v';
+      } else if (sort.text == 'v') {
+        sort.text = '^';
+      } else if (sort.text == '^') {
+        sort.text = '';
+      }
       onClick();
     });
+
+    column.append(inner);
     _thead.append(column);
   }
 
@@ -43,8 +63,9 @@ class DataTable {
   /// Присоединяет к DOM компоненту
   void mount(Element element) {
     _root = TableElement();
+    _root.className = 'data-table';
     _thead = _root.createTHead();
-    _tbody = _root.createTBody();    
+    _tbody = _root.createTBody();
     element.append(_root);
   }
 }

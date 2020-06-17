@@ -8,3 +8,21 @@ body {
   padding: 0;
   font-family: "Roboto", sans-serif;
 }
+
+.data-table th {  
+  border-bottom: 1px solid #111;
+}
+
+.data-table th .inner {
+  display: flex;
+}
+
+.data-table th .inner .title {
+  flex: 1;
+  padding-right: 8px;
+}
+
+.data-table th .inner .sort {
+  flex: 0;
+  padding-right: 8px;
+}
