@@ -107,20 +107,5 @@ class StoreBondInfo
     def getValueByName(name : String) : BondValue
         info = @@fields[name]?
         return info.try &.func.call(self)
-    end
-
-    # Считает реальную стоимость в процентах
-    # Для расчёта требуется текущая банковская ставка
-    def calcRealPrice(bankPercent : Float64) : Float64
-        totalC = 0.0
-        calcC = (couponPercent * initialFaceValue) / 100
-        couponFrequency.times do |x|
-            i = x + 1                
-            totalC += calcC / ((1 + bankPercent / 100.0) ** i)
-        end
-
-        h = initialFaceValue / ((1 + bankPercent / 100.0) ** couponFrequency)
-        res = totalC + h
-        return res / 10.0
-    end    
+    end   
 end

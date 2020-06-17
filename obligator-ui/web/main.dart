@@ -8,12 +8,19 @@ import 'widgets/data_table/data_table.dart';
 final table = DataTable();
 final orders = HashSet<String>();
 
+String formatDate(String dateString) {
+  final date = DateTime.parse(dateString);
+  final day = date.day < 10 ? '0${date.day}' : date.day;
+  final month = date.month < 10 ? '0${date.month}' : date.month;
+  return '${day}.${month}.${date.year}';
+}
+
 /// Наполняет таблицу
 void populateTable() {
   final dio = Dio();
 
   var url =
-      'http://localhost:8090/bonds/fetch?fields=fullname,isin,listLevel,price,couponPercent,couponFrequency,offerDate,endDate';
+      'http://localhost:8090/bonds/fetch?fields=fullname,isin,listLevel,price,couponPercent,couponFrequency,couponDate,offerDate,endDate';
   if (orders.isNotEmpty) {
     final ordStr = orders.join(',');
     url += '&orders=$ordStr';
@@ -28,9 +35,10 @@ void populateTable() {
       final listLevel = bondItem['listLevel'].toString();
       final couponPercent = bondItem['couponPercent'].toString();
       final couponFrequency = bondItem['couponFrequency'].toString();
+      final couponDate = formatDate(bondItem['couponDate']);
       final price = bondItem['price'].toString();
       final offerDate = bondItem['offerDate'] ?? '';
-      final endDate = bondItem['endDate'];
+      final endDate = formatDate(bondItem['endDate']);
 
       table.addRow([
         name,
@@ -38,6 +46,7 @@ void populateTable() {
         listLevel,
         couponPercent,
         couponFrequency,
+        couponDate,
         price,
         offerDate,
         endDate
@@ -77,6 +86,10 @@ void main() {
   });
   table.addColumn('Периодичность выплаты', () {
     switchOrder('couponFrequency');
+    populateTable();
+  });
+  table.addColumn('Дата купона', () {
+    switchOrder('couponDate');
     populateTable();
   });
   table.addColumn('Цена %', () {

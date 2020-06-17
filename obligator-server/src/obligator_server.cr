@@ -5,6 +5,7 @@ require "invest_api"
 
 require "./settings/settings_manager"
 require "./store/bond_store"
+require "./analytics/bond_calculator"
 
 # https://tinkoffcreditsystems.github.io/invest-openapi/swagger-ui/#/market/get_market_bonds
 
@@ -16,7 +17,7 @@ class BondGroup
     getter key : BondValue  
 
     # Список облигаций
-    getter bonds : Array(StoreBondInfo)
+    getter bonds : Array(BondHash)
     
     # Конструктор
     def initialize(@key, @bonds)    
@@ -27,15 +28,17 @@ end
 def sortBondGroupByKey(bonds : Array(BondGroup), orderType : String?) : Array(BondGroup)
     case orderType
     when "d" # Сортировка по убыванию
-        return bonds.sort! { |b, a|
+        return bonds.sort! { |b, a|            
             if a.key.is_a?(String) && b.key.is_a?(String)      
                 next a.key.to_s <=> b.key.to_s
             elsif a.key.is_a?(Int32) && b.key.is_a?(Int32)      
                 next a.key.as(Int32) <=> b.key.as(Int32)
             elsif a.key.is_a?(Int64) && b.key.is_a?(Int64)      
                 next a.key.as(Int64) <=> b.key.as(Int64)  
-            elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)      
+            elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)
                 next a.key.as(Float64) <=> b.key.as(Float64)
+            elsif a.key.is_a?(Time)                
+                next a.key.as(Time) <=> b.key.as(Time)
             end
             next 0
         }
@@ -49,6 +52,8 @@ def sortBondGroupByKey(bonds : Array(BondGroup), orderType : String?) : Array(Bo
                 next a.key.as(Int64) <=> b.key.as(Int64)  
             elsif a.key.is_a?(Float64) && b.key.is_a?(Float64)      
                 next a.key.as(Float64) <=> b.key.as(Float64)
+            elsif a.key.is_a?(Time)
+                next a.key.as(Time) <=> b.key.as(Time)            
             end
             next 0
         }
@@ -56,12 +61,12 @@ def sortBondGroupByKey(bonds : Array(BondGroup), orderType : String?) : Array(Bo
 end
 
 # Сортирует облигации
-def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Array(StoreBondInfo)      
+def sortBondsByOrders(bonds : Array(BondHash), orders : Array(String)) : Array(BondHash)      
     orderData = orders.shift.split("|")
     fieldName = orderData[0]
     orderType = orderData[1]?
 
-    groups = bonds.group_by { |x| x.getValueByName(fieldName) }
+    groups = bonds.group_by { |x| x[fieldName] }
        
     bondGroups = Array(BondGroup).new
     groups.each do |k, v| 
@@ -77,7 +82,7 @@ def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Ar
   
     bondGroups = sortBondGroupByKey(bondGroups, orderType)  
   
-    res = Array(StoreBondInfo).new
+    res = Array(BondHash).new
     bondGroups.each do |x|    
       res.concat(x.bonds)    
     end
@@ -86,7 +91,7 @@ def sortBondsByOrders(bonds : Array(StoreBondInfo), orders : Array(String)) : Ar
 end
 
 # Применяет оператор фильтра для значений
-def applyFilterOperator(operator : String, primeValue, filterValue) : Bool
+def applyFilterOperator(operator : String, primeValue, filterValue) : Bool    
     case operator
     when "="
         if primeValue.is_a?(Int32)
@@ -141,7 +146,7 @@ end
 
 # Фильтрует облигации
 # Пример фильтра: price<100;listLevel=1
-def filterBonds(bonds : Array(StoreBondInfo), filterStr : String) : Array(StoreBondInfo)
+def filterBonds(bonds : Array(BondHash), filterStr : String) : Array(BondHash)
     filterItems = filterStr.split(",")
     filterItems.each do |item|
         matches = item.match(/([\w]+)\[(.+)\]([\w]+)/).not_nil!
@@ -150,7 +155,7 @@ def filterBonds(bonds : Array(StoreBondInfo), filterStr : String) : Array(StoreB
         v1 = matches[3]
 
         bonds = bonds.select { |x| 
-            v2 = x.getValueByName(fieldName)
+            v2 = x[fieldName]
             next applyFilterOperator(operator, v2, v1)
         }
     end
@@ -158,7 +163,7 @@ def filterBonds(bonds : Array(StoreBondInfo), filterStr : String) : Array(StoreB
 end
 
 # Сортирует облигации
-def orderBonds(bonds : Array(StoreBondInfo), orderStr : String) : Array(StoreBondInfo)
+def orderBonds(bonds : Array(BondHash), orderStr : String) : Array(BondHash)
     if orderStr
         orderFields = orderStr.split(",")
         bonds = sortBondsByOrders(bonds, orderFields)
@@ -166,26 +171,25 @@ def orderBonds(bonds : Array(StoreBondInfo), orderStr : String) : Array(StoreBon
     return bonds
 end
 
-# Возвращает ответ на запрос облигаций
-def getBondFetchResponse(bonds : Array(StoreBondInfo), fieldStr : String) : String
+# Данные каждой облигации конвертирует в словарь
+def convertBondsToBondHash(bonds : Array(StoreBondInfo), fieldStr : String) : Array(BondHash)
     fields = fieldStr.split(",")
 
     res = Array(BondHash).new
     bonds.each do |bond|
         bondData = bond.getBondAsHash(fields)
 
-        if fields.any?("realPrice")
+        # Производит нужные расчёты
+        if fields.any?("calcPrice")
             # Брать ставку из интернета
-            realPrice = bond.calcRealPrice(5.5).round(2)
-            bondData["realPrice"] = realPrice
+            calcPrice = BondCalculator.calcRealPrice(bond.initialFaceValue, bond.couponPercent, bond.couponFrequency,  5.5).round(2)
+            bondData["calcPrice"] = calcPrice
         end
 
         res << bondData
     end
 
-    return {
-        bonds: res
-    }.to_json
+    return res
 end
 
 before_all do |env|
@@ -206,17 +210,23 @@ get "/bonds/fields" do |env|
     env.response.content_type = "application/json"
     fields = StoreBondInfo.getFieldNames()
 
+    calcFields = [ 
+        { "name" => "calcPrice", "description" => "Расчитаная цена в процентах" }        
+    ]
+
     next {
-        fields: fields.map { |x| { "name" => x.name, "description" => x.description } }
+        fields: calcFields.concat(fields.map { |x| { "name" => x.name, "description" => x.description } })
     }.to_json
 end
 
 # Возвращает список облигаций
 get "/bonds/fetch" do |env|
     env.response.content_type = "application/json"
-    
+        
+    fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
+
     # Получает все облигации
-    allBonds = BondStore.instance.getBonds()
+    allBonds = convertBondsToBondHash(BondStore.instance.getBonds(), fieldStr)
     
     # Применяет фильтр
     filterStr = env.params.query["filter"]?
@@ -224,12 +234,11 @@ get "/bonds/fetch" do |env|
 
     # Применяет сортировку
     orderStr = env.params.query["orders"]?    
-    allBonds = orderBonds(allBonds, orderStr) if orderStr
-
-    # Формирует ответ    
-    fieldStr = env.params.query["fields"]? || DEFAULT_FIELDS
+    allBonds = orderBonds(allBonds, orderStr) if orderStr    
     
-    next getBondFetchResponse(allBonds, fieldStr)
+    next {
+        bonds: allBonds
+    }.to_json
 end
   
 Kemal.run 8090
