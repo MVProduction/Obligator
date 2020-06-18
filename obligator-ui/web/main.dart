@@ -7,6 +7,7 @@ import 'widgets/data_table/data_table.dart';
 
 final table = DataTable();
 final orders = HashSet<String>();
+final filters = <String, String>{};
 
 String formatDate(String dateString) {
   final date = DateTime.parse(dateString);
@@ -24,6 +25,11 @@ void populateTable() {
   if (orders.isNotEmpty) {
     final ordStr = orders.join(',');
     url += '&orders=$ordStr';
+  }
+
+  if (filters.isNotEmpty) {
+    final items = filters.entries.map((e) => '${e.key}${e.value}').join(',');
+    url += '&filter=$items';
   }
 
   dio.get(url).then((response) {
@@ -66,43 +72,65 @@ void switchOrder(String order) {
   }
 }
 
+void applyFilter(String column, String filter) {
+  if (filter.isEmpty) {
+    filters.remove(column);
+  } else {
+    filters[column] = filter;
+  }
+  populateTable();
+}
+
 void main() {
   table.mount(querySelector('#output'));
   table.addColumn('Название', () {
     switchOrder('fullname');
     populateTable();
-  });
+  }, (filter) {});
+
   table.addColumn('Isin', () {
     switchOrder('isin');
     populateTable();
-  });
+  }, (filter) {});
   table.addColumn('Листинг', () {
     switchOrder('listLevel');
     populateTable();
+  }, (filter) {
+    applyFilter('listLevel', filter);
   });
   table.addColumn('Купон %', () {
     switchOrder('couponPercent');
     populateTable();
+  }, (filter) {
+    applyFilter('couponPercent', filter);
   });
   table.addColumn('Периодичность выплаты', () {
     switchOrder('couponFrequency');
     populateTable();
+  }, (filter) {
+    applyFilter('couponFrequency', filter);
   });
   table.addColumn('Дата купона', () {
     switchOrder('couponDate');
     populateTable();
+  }, (filter) {
+    applyFilter('couponDate', filter);
   });
   table.addColumn('Цена %', () {
     switchOrder('price');
     populateTable();
+  }, (filter) {
+    applyFilter('price', filter);
   });
   table.addColumn('Дата оферты', () {
     switchOrder('offerDate');
     populateTable();
-  });
+  }, (filter) {});
   table.addColumn('Дата погашения', () {
     switchOrder('endDate');
     populateTable();
+  }, (filter) {
+    applyFilter('endDate', filter);
   });
 
   populateTable();

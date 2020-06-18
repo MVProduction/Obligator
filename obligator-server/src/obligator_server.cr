@@ -149,6 +149,7 @@ end
 def filterBonds(bonds : Array(BondHash), filterStr : String) : Array(BondHash)
     filterItems = filterStr.split(",")
     filterItems.each do |item|
+        p item
         matches = item.match(/([\w]+)\[(.+)\]([\w]+)/).not_nil!
         fieldName = matches[1]
         operator = matches[2]

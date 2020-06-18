@@ -1,7 +1,10 @@
 import 'dart:html';
 
-/// Функция которая вызывается при нажатии на колонку
-typedef OnColumnClickFunc = void Function();
+/// Функция которая вызывается при переключении сортировки
+typedef OnSortClickFunc = void Function();
+
+/// Функция которая вызывается при изменения фильтра в колонке
+typedef OnFilterChangeFunc = void Function(String filter);
 
 /// Таблица отображающая данные
 class DataTable {
@@ -15,10 +18,12 @@ class DataTable {
   TableSectionElement _tbody;
 
   /// Добавляет колонку
-  void addColumn(String name, OnColumnClickFunc onClick) {
+  void addColumn(String name, OnSortClickFunc onSort, OnFilterChangeFunc onFilter) {
     final column = Element.th();
     final inner = Element.div();
-    inner.className = 'inner';
+    final head = Element.div();
+    head.className = 'inner';
+    inner.append(head);
 
     final title = Element.div();
     title.className = 'title';
@@ -26,9 +31,10 @@ class DataTable {
     final sort = Element.div();
     sort.className = 'sort';
     sort.text = '';
-    inner.append(title);
-    inner.append(sort);
-    column.onClick.listen((event) {
+    head.append(title);
+    head.append(sort);
+
+    head.onClick.listen((event) {
       if (sort.text == '') {
         sort.text = 'v';
       } else if (sort.text == 'v') {
@@ -36,8 +42,17 @@ class DataTable {
       } else if (sort.text == '^') {
         sort.text = '';
       }
-      onClick();
+      onSort();
     });
+
+    final filter = InputElement();
+    filter.onKeyPress.listen((event) {
+      if (event.keyCode == KeyCode.ENTER) {        
+        onFilter(filter.value);
+      }
+    });
+
+    inner.append(filter);
 
     column.append(inner);
     _thead.append(column);
